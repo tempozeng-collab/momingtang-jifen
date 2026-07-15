@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>灵喵京 · 墨名堂积分系统 v0.1</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+.page{display:none}
+.page.active{display:block}
+.fade-in{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen">
+
+<!-- ====== LOGIN PAGE ====== -->
+<div id="page-login" class="page active min-h-screen flex items-center justify-center bg-gradient-to-b from-stone-100 to-stone-200 p-4">
+  <div class="w-full max-w-sm fade-in">
+    <div class="text-center mb-8">
+      <div class="text-4xl mb-2">🐱</div>
+      <h1 class="text-2xl font-bold text-stone-800">墨名堂</h1>
+      <p class="text-stone-500 text-sm mt-1">灵喵京 · 积分系统 v0.1</p>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+      <div class="flex mb-6 bg-stone-100 rounded-lg p-1">
+        <button onclick="switchTab('login')" id="tab-login" class="flex-1 py-2 rounded-md text-sm font-medium bg-white shadow text-stone-800">登录</button>
+        <button onclick="switchTab('register')" id="tab-register" class="flex-1 py-2 rounded-md text-sm font-medium text-stone-500">注册</button>
+      </div>
+      <div id="form-register" class="hidden"><input id="reg-nick" class="w-full mb-3 px-4 py-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="昵称"></div>
+      <input id="phone" class="w-full mb-3 px-4 py-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="手机号" value="13800000001">
+      <input id="password" class="w-full mb-4 px-4 py-3 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" type="password" placeholder="密码" value="Test1234!">
+      <p id="login-err" class="text-red-500 text-xs mb-3 hidden"></p>
+      <button onclick="doLogin()" class="w-full py-3 bg-stone-800 text-white rounded-lg text-sm font-medium hover:bg-stone-700">进入灵喵京</button>
+      <p class="text-xs text-stone-400 text-center mt-4">Demo 账号已预填，直接点击进入即可</p>
+    </div>
+    <p class="text-center text-xs text-stone-400 mt-6">墨名堂 · 真丝汉服 &copy; 2025</p>
+  </div>
+</div>
+
+<!-- ====== DASHBOARD PAGE ====== -->
+<div id="page-dashboard" class="page min-h-screen bg-stone-50">
+  <header class="bg-white border-b border-stone-200 sticky top-0 z-10">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2"><span class="text-xl">🐱</span><span class="font-bold">墨名堂</span><span class="text-xs text-stone-400 ml-1">灵喵京</span></div>
+      <div class="flex items-center gap-3">
+        <a href="#manor" class="text-sm text-stone-500 hover:text-stone-700 flex items-center gap-1">🏯<span>兰室</span></a>
+        <button onclick="router('login')" class="text-xs text-stone-400 hover:text-red-500">退出</button>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-2xl mx-auto px-4 py-6 space-y-4 fade-in" id="dashboard-content"></main>
+</div>
+
+<!-- ====== MANOR PAGE ====== -->
+<div id="page-manor" class="page">
+  <div id="manor-hero" class="min-h-[60vh] flex items-center justify-center relative overflow-hidden"></div>
+  <div class="max-w-2xl mx-auto px-4 py-6" id="manor-gallery"></div>
+</div>
+
+<!-- ====== ORDERS PAGE ====== -->
+<div id="page-orders" class="page min-h-screen bg-stone-50">
+  <header class="bg-white border-b border-stone-200"><div class="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3"><a href="#dashboard" class="text-stone-400">←</a><span class="font-bold">积分订单</span><span class="text-xs text-stone-400">官方店同步</span></div></header>
+  <main class="max-w-2xl mx-auto px-4 py-6 space-y-3 fade-in" id="orders-content"></main>
+</div>
+
+<!-- ====== ADMIN PAGE ====== -->
+<div id="page-admin" class="page min-h-screen bg-stone-900 text-stone-200">
+  <header class="bg-stone-800 border-b border-stone-700"><div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between"><div class="flex items-center gap-2"><span>🏛️</span><span class="font-bold">巡查史司</span></div><div class="flex gap-1" id="admin-tabs"></div></div></header>
+  <main class="max-w-4xl mx-auto px-4 py-6 fade-in" id="admin-content"></main>
+</div>
+
+<script>
+// ========== MOCK DATA ==========
+const MOCK_USER = {
+  id:1, phone:'13800000001', nickname:'墨名堂·花间喵', tier:'BAIXIAO', 
+  total_meowcoin:2500, used_meowcoin:300, frozen_meowcoin:0, wu_jing:0,
+  isXuan:false, displayTier:'BAIXIAO'
+};
+
+const MOCK_LEDGER = [
+  {type:'ORDER_SYNC', direction:'IN', amount:1200, created_at:'2023-10-01', meta:'{"platform":"淘宝","desc":"宋制旋裙 真丝汉服"}'},
+  {type:'ORDER_SYNC', direction:'IN', amount:800, created_at:'2023-11-15', meta:'{"platform":"淘宝","desc":"唐制齐胸 真丝"}'},
+  {type:'ORDER_SYNC', direction:'IN', amount:500, created_at:'2024-03-20', meta:'{"platform":"抖音","desc":"明制披风 真丝"}'},
+];
+ 
+const MOCK_ORDERS = [
+  {platform:'淘宝',order_id:'T20231001',paid_at:'2023-01-15',raw_amount:120000,valid_amount:120000,meowcoin_earned:1200,calc_status:'COUNTED',items_json:[{title:'宋制旋裙 真丝汉服',code:'H10001',amount:120000,rule:'COUNTED_H'}]},
+  {platform:'淘宝',order_id:'T20231115',paid_at:'2023-11-15',raw_amount:80000,valid_amount:80000,meowcoin_earned:800,calc_status:'COUNTED',items_json:[{title:'唐制齐胸 真丝',code:'H10002',amount:80000,rule:'COUNTED_H'}]},
+  {platform:'抖音',order_id:'DY20240320',paid_at:'2024-03-20',raw_amount:50000,valid_amount:50000,meowcoin_earned:500,calc_status:'COUNTED',items_json:[{title:'明制披风 真丝',code:'H20001',amount:50000,rule:'COUNTED_H'}]},
+  {platform:'淘宝',order_id:'T20240501',paid_at:'2024-05-01',raw_amount:9900,valid_amount:0,meowcoin_earned:0,calc_status:'EXCLUDED',exclude_reason:'EXCLUDED_TITLE',items_json:[{title:'特价款 汉服体验',code:'H30001',amount:9900,rule:'EXCLUDED_TITLE'}]},
+];
+
+const TIERS = [
+  {code:'FUXIAO',name:'拂晓喵',min:0,color:'#7A8BA3',bg:'from-slate-400 to-slate-500',emoji:'🐱'},
+  {code:'BAIXIAO',name:'白小喵',min:2000,color:'#C0C0C0',bg:'from-stone-300 to-stone-400',emoji:'😺'},
+  {code:'NAI_NIU',name:'奶牛喵',min:3000,color:'#2D2D2D',bg:'from-stone-700 to-stone-800',emoji:'🐄'},
+  {code:'LI_HUA',name:'狸花喵',min:10000,color:'#8B5E3C',bg:'from-amber-600 to-amber-700',emoji:'🐯'},
+  {code:'SAN_HUA',name:'三花喵',min:20000,color:'#E8C5A0',bg:'from-amber-300 to-orange-400',emoji:'👑'},
+  {code:'XUAN_MEOW',name:'玄喵',min:-1,color:'#1A1A2E',bg:'from-purple-900 to-indigo-900',emoji:'🌙'},
+];
+
+const MANOR_DATA = {
+  FUXIAO:{name:'茅檐·雅舍',grid:'3×3',desc:'青砖黛瓦、竹篱茅舍、一榻一几、窗外修竹、案头香炉',bg:'from-emerald-700 via-teal-600 to-cyan-700',scene:'🌿🎋🏠🍵',emoji:'🐱'},
+  BAIXIAO:{name:'小筑·听雨',grid:'5×5',desc:'回廊连接正厢侧厢、月亮门框景、池塘睡莲、桂花树下石桌',bg:'from-teal-600 via-cyan-500 to-blue-600',scene:'🏡🌧️🌙🪷',emoji:'😺'},
+  NAI_NIU:{name:'庭院·藏锋',grid:'7×7',desc:'花厅挂画、书斋藏书、假山流水、猫爬架、秋千',bg:'from-slate-700 via-zinc-600 to-stone-700',scene:'🏛️📚⛲🎠',emoji:'🐄'},
+  LI_HUA:{name:'府邸·织锦',grid:'9×9',desc:'画舫泊湖、温室奇葩、藏经楼、专属纹样展示墙',bg:'from-amber-700 via-yellow-600 to-orange-700',scene:'🏰🛶🌺📜',emoji:'🐯'},
+  SAN_HUA:{name:'王府·御赐',grid:'12×12',desc:'琉璃瓦、御赐匾额、灵猫御座、王府大街、御花园、九重门',bg:'from-amber-400 via-yellow-300 to-orange-400',scene:'👑🏯🌸🎇',emoji:'👑'},
+  XUAN_MEOW:{name:'玄境·归墟',grid:'—',desc:'星辰大海、虚空之境、玄喵独享',bg:'from-indigo-900 via-purple-900 to-slate-900',scene:'🌙✨💫🌌',emoji:'🌙'},
+};
+
+const LOCKED_MODULES = [
+  {name:'午门',desc:'签到·任务',icon:'📋'},{name:'集珍坊',desc:'积分兑换',icon:'🏪'},
+  {name:'试衣阁',desc:'虚拟试穿',icon:'👘'},{name:'丝物所',desc:'DIY 工坊',icon:'✂️'},
+  {name:'藏经阁',desc:'汉服百科',icon:'📚'},{name:'节令司',desc:'节气日历',icon:'📅'},
+  {name:'通玄镜',desc:'社交',icon:'🔮'},{name:'出云门',desc:'雾精',icon:'☁️'},
+];
+
+let currentPage = 'login';
+let isAdmin = false;
+
+// ========== ROUTER ==========
+function router(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el = document.getElementById('page-'+page);
+  if (el) { el.classList.add('active'); currentPage = page; }
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'manor') renderManor();
+  if (page === 'orders') renderOrders();
+  if (page === 'admin') renderAdmin('overview');
+}
+
+window.onhashchange = function() {
+  const h = location.hash.replace('#','') || 'login';
+  if (h === 'manor') router('manor');
+  else if (h === 'orders') router('orders');
+  else if (h === 'admin') router('admin');
+  else router(h === 'login' ? 'login' : 'dashboard');
+};
+
+// ========== LOGIN ==========
+function switchTab(t) {
+  document.getElementById('tab-login').className = t==='login'?'flex-1 py-2 rounded-md text-sm font-medium bg-white shadow text-stone-800':'flex-1 py-2 rounded-md text-sm font-medium text-stone-500';
+  document.getElementById('tab-register').className = t==='register'?'flex-1 py-2 rounded-md text-sm font-medium bg-white shadow text-stone-800':'flex-1 py-2 rounded-md text-sm font-medium text-stone-500';
+  document.getElementById('form-register').classList.toggle('hidden', t==='login');
+}
+
+function doLogin() {
+  var p = document.getElementById('phone').value;
+  var pw = document.getElementById('password').value;
+  if (!p || !pw) { document.getElementById('login-err').classList.remove('hidden'); document.getElementById('login-err').innerText='请填写手机号和密码'; return; }
+  // Demo mode: accept common demo credentials
+  if (p === '13800000001' && pw === 'Test1234!') { isAdmin = false; router('dashboard'); return; }
+  if (pw === 'Admin123!' && document.getElementById('phone').value === 'admin') { isAdmin = true; router('admin'); return; }
+  // Accept any credentials for demo
+  isAdmin = false; router('dashboard');
+}
+
+// ========== DASHBOARD ==========
+function renderDashboard() {
+  var u = MOCK_USER;
+  var ti = TIERS.find(t=>t.code===u.tier) || TIERS[0];
+  var curIdx = TIERS.findIndex(t=>t.code===u.tier);
+  var next = curIdx>=0 && curIdx<TIERS.length-1 ? TIERS[curIdx+1] : null;
+  if (next && next.code==='XUAN_MEOW') next=null;
+  var avail = u.total_meowcoin - u.used_meowcoin - u.frozen_meowcoin;
+  var allTiers = TIERS.filter(t=>t.code!=='XUAN_MEOW');
+  
+  var h = '';
+  // Tier card
+  h += '<div class="rounded-2xl bg-gradient-to-br '+ti.bg+' p-5 text-white relative overflow-hidden">';
+  h += '<div class="absolute top-0 right-0 text-8xl opacity-10">'+ti.emoji+'</div><div class="relative">';
+  h += '<div class="flex items-center gap-3 mb-3"><span class="text-3xl">'+ti.emoji+'</span><div><p class="text-white/70 text-xs">当前阶位</p><p class="text-xl font-bold">'+ti.name+'</p></div></div>';
+  h += '<div class="flex gap-6 text-white/80 text-sm">';
+  h += '<div><span class="block text-2xl font-bold text-white">'+u.total_meowcoin.toLocaleString()+'</span>总喵币</div>';
+  h += '<div><span class="block text-2xl font-bold text-white">'+avail.toLocaleString()+'</span>可用</div>';
+  h += '<div><span class="block text-2xl font-bold text-white">'+u.frozen_meowcoin+'</span>冻结</div></div>';
+  if (next) {
+    var prog = u.total_meowcoin - (TIERS[curIdx]?.min||0);
+    var total = next.min - (TIERS[curIdx]?.min||0);
+    var pct = Math.min(100, (prog/total)*100);
+    h += '<div class="mt-3 bg-white/20 rounded-full h-2 overflow-hidden"><div class="h-full bg-white/60 rounded-full" style="width:'+pct+'%"></div></div>';
+    h += '<p class="text-white/60 text-xs mt-1">距「'+next.name+'」还需 '+(total-prog)+' 喵币</p>';
+  }
+  h += '</div></div>';
+
+  // Tier preview
+  h += '<div class="bg-white rounded-xl border border-stone-200 p-4"><p class="text-xs text-stone-400 mb-3">阶位预览</p><div class="flex items-center gap-1">';
+  allTiers.forEach(t=>{
+    h += '<div class="flex-1 text-center py-2 rounded-lg text-xs '+(t.code===u.tier?'bg-stone-800 text-white font-medium':'bg-stone-50 text-stone-400')+'">'+t.name.split('喵')[0]+'喵</div>';
+  });
+  h += '</div></div>';
+
+  // Quick entry
+  h += '<div class="grid grid-cols-4 gap-2">';
+  h += '<a href="#manor" class="bg-white border border-stone-200 rounded-xl p-3 text-center hover:border-amber-300 transition no-underline"><div class="text-2xl mb-1">🏯</div><div class="text-xs text-stone-600">兰室</div></a>';
+  h += '<a href="#orders" class="bg-white border border-stone-200 rounded-xl p-3 text-center hover:border-amber-300 transition no-underline"><div class="text-2xl mb-1">📦</div><div class="text-xs text-stone-600">积分订单</div></a>';
+  LOCKED_MODULES.slice(0,2).forEach(m=>{
+    h += '<div class="bg-stone-100 border border-stone-200 rounded-xl p-3 text-center opacity-50"><div class="text-2xl mb-1">'+m.icon+'</div><div class="text-xs text-stone-400">'+m.name+'<br><span class="text-[10px]">待开放</span></div></div>';
+  });
+  h += '</div>';
+
+  // Bindings
+  h += '<div class="bg-white rounded-xl border border-stone-200 p-4"><p class="text-sm font-medium text-stone-700 mb-3">平台绑定</p><div class="grid grid-cols-3 gap-2">';
+  ['淘宝','小红书','抖音','微信小店','群接龙','京东'].forEach((p,i)=>{
+    var bound = i < 2; // first two bound in demo
+    h += '<div class="py-2 px-3 rounded-lg text-xs text-center '+(bound?'bg-green-50 text-green-700 border border-green-200':'bg-stone-50 text-stone-400 border border-stone-200')+'">'+(bound?'✅ ':'⚪ ')+p+'</div>';
+  });
+  h += '</div></div>';
+
+  // Flow
+  h += '<div class="bg-white rounded-xl border border-stone-200 p-4"><p class="text-sm font-medium text-stone-700 mb-3">最近流水</p>';
+  MOCK_LEDGER.forEach(tx=>{
+    var desc=''; try{desc=JSON.parse(tx.meta).desc||''}catch(e){}
+    h += '<div class="flex items-center justify-between py-2 border-b border-stone-100 last:border-0"><div><p class="text-sm text-stone-700">'+(tx.type==='ORDER_SYNC'?'订单同步':tx.type)+'</p><p class="text-xs text-stone-400">'+tx.created_at+' · '+desc+'</p></div><span class="text-sm font-mono font-medium '+(tx.direction==='IN'?'text-green-600':'text-red-500')+'">'+(tx.direction==='IN'?'+':'-')+tx.amount+'</span></div>';
+  });
+  h += '</div>';
+
+  // Locked modules
+  h += '<div class="bg-white rounded-xl border border-stone-200 p-4"><p class="text-sm font-medium text-stone-700 mb-3">更多模块 <span class="text-xs text-stone-400 font-normal">即将开放</span></p><div class="grid grid-cols-3 gap-2">';
+  LOCKED_MODULES.forEach(m=>{
+    h += '<div class="py-3 px-2 rounded-lg bg-stone-50 border border-stone-200 text-center opacity-50"><div class="text-lg mb-1">'+m.icon+'</div><div class="text-xs text-stone-400">'+m.name+'</div><div class="text-[10px] text-stone-300">'+m.desc+'</div></div>';
+  });
+  h += '</div>';
+  
+  // Admin entry
+  h += '<div class="text-center"><a href="#admin" class="text-xs text-stone-300 hover:text-stone-500">🏛️ 后台管理</a></div>';
+
+  document.getElementById('dashboard-content').innerHTML = h;
+}
+
+// ========== MANOR ==========
+function renderManor() {
+  var ti = TIERS.find(t=>t.code===MOCK_USER.tier) || TIERS[0];
+  var m = MANOR_DATA[MOCK_USER.tier] || MANOR_DATA.FUXIAO;
+  var hero = document.getElementById('manor-hero');
+  hero.className = 'min-h-[60vh] bg-gradient-to-br '+m.bg+' flex items-center justify-center relative overflow-hidden';
+  hero.innerHTML = '<div class="absolute inset-0 opacity-10 text-[20rem] flex items-center justify-center select-none">'+m.emoji+'</div>'+
+    '<div class="relative text-center text-white px-4"><div class="text-6xl mb-4">'+m.emoji+'</div>'+
+    '<h1 class="text-3xl font-bold mb-2">'+m.name+'</h1><p class="text-white/70 text-sm mb-1">'+m.scene+'</p>'+
+    '<p class="text-white/50 text-xs max-w-xs mx-auto">'+m.desc+'</p>'+
+    '<div class="mt-6 inline-block bg-white/20 backdrop-blur rounded-full px-4 py-2 text-sm">网格 '+m.grid+' · 静态展示</div>'+
+    '<p class="mt-3 text-white/40 text-xs">装饰功能即将开放，敬请期待</p></div>';
+
+  var gallery = document.getElementById('manor-gallery');
+  var h = '<p class="text-sm text-stone-500 mb-4">全阶位预览</p><div class="grid grid-cols-2 gap-3">';
+  var displayTiers = TIERS.filter(t=>t.code!=='XUAN_MEOW');
+  displayTiers.forEach(t=>{
+    var md = MANOR_DATA[t.code];
+    var isCur = t.code===MOCK_USER.tier;
+    h += '<div class="rounded-xl overflow-hidden border '+(isCur?'border-amber-400 ring-2 ring-amber-400/30':'border-stone-200')+'">';
+    h += '<div class="h-24 bg-gradient-to-br '+md.bg+' flex items-center justify-center relative">';
+    h += '<span class="text-4xl opacity-50">'+md.emoji+'</span>';
+    if (isCur) h += '<span class="absolute top-2 right-2 bg-amber-400 text-white text-xs px-2 py-0.5 rounded-full font-medium">当前</span>';
+    h += '</div><div class="bg-white p-3"><p class="text-sm font-medium text-stone-700">'+md.name+'</p><p class="text-xs text-stone-400 mt-1">网格 '+md.grid+'</p></div></div>';
+  });
+  h += '</div><a href="#dashboard" class="block text-center text-stone-400 text-sm mt-6 hover:text-stone-600">← 返回觐见殿</a>';
+  gallery.innerHTML = h;
+}
+
+// ========== ORDERS ==========
+function renderOrders() {
+  var PLAT = {'淘宝':'🧡','抖音':'🖤','小红书':'❤️','京东':'🔴','微信小店':'💚','群接龙':'💜'};
+  var h = '';
+  MOCK_ORDERS.forEach(o=>{
+    h += '<div class="bg-white rounded-xl border border-stone-200 p-4"><div class="flex items-center justify-between mb-2">';
+    h += '<div class="flex items-center gap-2"><span class="text-lg">'+(PLAT[o.platform]||'📦')+'</span><span class="text-sm font-medium text-stone-700">'+o.platform+'</span><span class="text-xs text-stone-400">'+o.paid_at+'</span></div>';
+    h += '<span class="text-xs px-2 py-1 rounded-full font-medium '+(o.calc_status==='COUNTED'?'bg-green-50 text-green-700':'bg-red-50 text-red-600')+'">'+(o.calc_status==='COUNTED'?'+'+o.meowcoin_earned+' 喵币':o.exclude_reason||'未计入')+'</span></div>';
+    (o.items_json||[]).forEach(item=>{
+      h += '<div class="flex items-center justify-between text-xs py-1"><div class="flex items-center gap-2 flex-1 min-w-0"><span class="truncate text-stone-600">'+item.title+'</span>';
+      if (item.code) h += '<code class="text-[10px] bg-stone-100 px-1.5 py-0.5 rounded text-stone-400 font-mono">'+item.code+'</code>';
+      h += '</div><div class="flex items-center gap-2 ml-2"><span class="text-stone-500">¥'+(item.amount/100).toFixed(2)+'</span>';
+      h += '<span class="text-[10px] px-1.5 py-0.5 rounded '+(item.rule==='COUNTED_H'?'bg-green-50 text-green-600':'bg-stone-100 text-stone-400')+'">'+(item.rule==='COUNTED_H'?'计入':item.rule==='EXCLUDED_X'?'X排除':item.rule==='EXCLUDED_TITLE'?'标题词':'不计')+'</span></div></div>';
+    });
+    h += '<div class="mt-2 pt-2 border-t border-stone-100 flex justify-between text-xs text-stone-400"><span>原始 ¥'+(o.raw_amount/100).toFixed(2)+'</span><span>有效 ¥'+(o.valid_amount/100).toFixed(2)+'</span></div></div>';
+  });
+  document.getElementById('orders-content').innerHTML = h || '<div class="text-center py-12 text-stone-400">暂无同步订单</div>';
+}
+
+// ========== ADMIN ==========
+function renderAdmin(tab) {
+  var tabs = document.getElementById('admin-tabs');
+  tabs.innerHTML = ['overview','users','orders'].map(t=>'<button onclick="renderAdmin(\''+t+'\')" class="px-3 py-1.5 rounded-lg text-xs font-medium '+(tab===t?'bg-amber-500 text-stone-900':'text-stone-400 hover:text-white')+'">'+(t==='overview'?'📊 概览':t==='users'?'👤 用户':'📋 订单')+'</button>').join('');
+  
+  var c = document.getElementById('admin-content');
+  if (tab==='overview') {
+    c.innerHTML = '<div class="grid grid-cols-4 gap-3">'+
+      ['总用户','1','总喵币','2,500','已计订单','3','排除订单','1'].map((v,i)=>{
+        if (i%2===0) return '<div class="bg-stone-800 rounded-xl p-4 border border-stone-700"><p class="text-stone-400 text-xs">'+v+'</p>';
+        return '<p class="text-2xl font-bold mt-1">'+v+'</p></div>';
+      }).join('')+'</div>'+
+      '<div class="bg-stone-800 rounded-xl border border-stone-700 p-4 mt-4"><p class="text-sm font-medium mb-3">🔧 手动调账</p>'+
+      '<div class="flex gap-2 mb-2"><input id="adj-uid" class="flex-1 px-3 py-2 bg-stone-700 border border-stone-600 rounded-lg text-sm text-white" placeholder="用户ID"><input id="adj-amt" class="w-24 px-3 py-2 bg-stone-700 border border-stone-600 rounded-lg text-sm text-white" placeholder="金额"></div>'+
+      '<input id="adj-reason" class="w-full mb-2 px-3 py-2 bg-stone-700 border border-stone-600 rounded-lg text-sm text-white" placeholder="理由（必填）">'+
+      '<button onclick="alert(\'Demo: 调账已记录 ✓\')" class="px-4 py-2 bg-amber-500 text-stone-900 rounded-lg text-sm font-bold">提交调账</button></div>';
+  } else if (tab==='users') {
+    c.innerHTML = '<div class="bg-stone-800 rounded-xl border border-stone-700 p-4 flex items-center justify-between"><div><p class="text-sm font-medium">'+MOCK_USER.nickname+' <span class="text-stone-500 text-xs">ID:1</span></p><p class="text-xs text-stone-400">'+MOCK_USER.phone+' · '+MOCK_USER.tier+' · 喵币 '+MOCK_USER.total_meowcoin+'</p></div><button onclick="MOCK_USER.isXuan=!MOCK_USER.isXuan;alert(MOCK_USER.isXuan?\'已授予玄喵 🌙\':\'已取消玄喵\');renderAdmin(\'users\')" class="px-3 py-1.5 rounded-lg text-xs font-medium '+(MOCK_USER.isXuan?'bg-purple-600 text-white':'bg-stone-700 text-stone-400')+'">'+(MOCK_USER.isXuan?'🌙 已授玄喵':'授予玄喵')+'</button></div>';
+  } else {
+    c.innerHTML = MOCK_ORDERS.map(o=>'<div class="bg-stone-800 rounded-xl border border-stone-700 p-4 mb-2"><div class="flex items-center justify-between"><div><span class="text-sm font-medium">'+o.platform+' · '+o.order_id+'</span><span class="text-xs text-stone-500 ml-2">'+MOCK_USER.nickname+'</span></div><span class="text-xs px-2 py-1 rounded-full font-medium '+(o.calc_status==='COUNTED'?'bg-green-900 text-green-300':'bg-red-900 text-red-300')+'">'+(o.calc_status==='COUNTED'?'+'+o.meowcoin_earned+' 喵币':o.exclude_reason||'未计入')+'</span></div><p class="text-xs text-stone-400 mt-1">'+o.paid_at+' · 原始 ¥'+(o.raw_amount/100).toFixed(2)+' · 有效 ¥'+(o.valid_amount/100).toFixed(2)+'</p></div>').join('');
+  }
+}
+
+// Init
+if (location.hash) {
+  var h = location.hash.replace('#','');
+  if (h==='manor') router('manor');
+  else if (h==='orders') router('orders');
+  else if (h==='admin') { isAdmin=true; router('admin'); }
+  else router('dashboard');
+}
+</script>
+</body>
+</html>
