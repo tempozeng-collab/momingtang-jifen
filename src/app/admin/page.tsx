@@ -17,19 +17,19 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-stone-900 p-3 sm:p-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="text-4xl mb-2">🏛️</div>
-          <h1 className="text-xl font-bold text-white">巡查史司</h1>
-          <p className="text-stone-400 text-sm mt-1">墨名堂 · 后台管理</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">🏛️</div>
+          <h1 className="text-lg sm:text-xl font-bold text-white">巡查史司</h1>
+          <p className="text-stone-400 text-xs sm:text-sm mt-0.5 sm:mt-1">墨名堂 · 后台管理</p>
         </div>
-        <div className="bg-stone-800 rounded-xl border border-stone-700 p-6">
-          <input className="w-full mb-3 px-4 py-3 bg-stone-700 border border-stone-600 rounded-lg text-sm text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="管理员账号" value={username} onChange={e => setUsername(e.target.value)} />
-          <input className="w-full mb-4 px-4 py-3 bg-stone-700 border border-stone-600 rounded-lg text-sm text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500" type="password" placeholder="密码" value={password} onChange={e => setPassword(e.target.value)} />
-          {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-          <button onClick={login} className="w-full py-3 bg-amber-500 text-stone-900 rounded-lg text-sm font-bold hover:bg-amber-400">登录后台</button>
-          <p className="text-center text-xs text-stone-500 mt-4">Demo：admin / Admin123!</p>
+        <div className="bg-stone-800 rounded-xl border border-stone-700 p-4 sm:p-6">
+          <input className="w-full mb-2 sm:mb-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-stone-700 border border-stone-600 rounded-lg text-sm text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="管理员账号" value={username} onChange={e => setUsername(e.target.value)} />
+          <input className="w-full mb-3 sm:mb-4 px-3 sm:px-4 py-2.5 sm:py-3 bg-stone-700 border border-stone-600 rounded-lg text-sm text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500" type="password" placeholder="密码" value={password} onChange={e => setPassword(e.target.value)} />
+          {error && <p className="text-red-400 text-xs mb-2 sm:mb-3">{error}</p>}
+          <button onClick={login} className="w-full py-2.5 sm:py-3 bg-amber-500 text-stone-900 rounded-lg text-sm font-bold hover:bg-amber-400">登录后台</button>
+          <p className="text-center text-[10px] sm:text-xs text-stone-500 mt-3 sm:mt-4">Demo：admin / Admin123!</p>
         </div>
       </div>
     </div>
